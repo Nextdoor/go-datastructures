@@ -52,6 +52,7 @@ TODO: Unify the types of queue to the same interface.
 package queue
 
 import (
+	"math"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -408,4 +409,20 @@ func ExecuteInParallel(q *Queue, fn func(interface{})) {
 	wg.Wait()
 	q.lock.Unlock()
 	q.Dispose()
+}
+
+func (q *Queue) Resize(factor float64) error {
+	q.lock.Lock()
+
+	if q.disposed {
+		q.lock.Unlock()
+		return ErrDisposed
+	}
+
+	if cap(q.items) > int(math.Round(factor * float64(len(q.items)))) {
+		q.items = append(items(nil), q.items[:]...)
+	}
+
+	q.lock.Unlock()
+	return nil
 }
